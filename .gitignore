@@ -1,0 +1,21 @@
+# Credentials and local state - never commit
+.env
+.env.*
+!.env.example
+token.json
+audit.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
