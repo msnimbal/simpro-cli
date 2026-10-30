@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import getpass
 import http.client
 import json
 import os
@@ -122,7 +123,7 @@ class Settings:
         if missing:
             raise CliError(
                 "Missing configuration: " + ", ".join(missing)
-                + f". Run `simpro config init` and fill in {env_file_path()}",
+                + f". Run `simpro setup` (or `simpro config init` and fill in {env_file_path()} by hand)",
                 EXIT_AUTH,
             )
 
@@ -553,6 +554,81 @@ SIMPRO_READ_ONLY=false
 """
 
 
+def _normalise_build_url(value: str) -> str:
+    value = value.strip()
+    if not value:
+        return ""
+    if not value.startswith(("http://", "https://")):
+        value = "https://" + value
+    parts = urllib.parse.urlsplit(value)
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+def _ask(label: str, default: str = "", secret: bool = False) -> str:
+    suffix = f" [{default}]" if default else ""
+    prompt = f"{label}{suffix}: "
+    value = getpass.getpass(prompt) if secret else input(prompt)
+    value = value.strip()
+    if any(ch in value for ch in "\r\n"):
+        raise CliError("Values must be a single line.", EXIT_USAGE)
+    return value or default
+
+
+def cmd_setup(args: argparse.Namespace) -> int:
+    """Interactive first-time setup: ask for the credentials, save them, test the connection."""
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        raise CliError(
+            "`simpro setup` asks for your API secret, so it must be run by you in a normal terminal "
+            "window (not through Claude). Open Terminal and run: simpro setup",
+            EXIT_USAGE,
+        )
+    path = env_file_path()
+    print("simPRO setup - your answers are saved only in a private file on this computer.")
+    print(f"File: {path}\n")
+    if path.exists():
+        if _ask("Settings already exist. Replace them? (y/N)", "n").lower() not in {"y", "yes"}:
+            print("Nothing changed. To edit by hand, open the file above in a text editor.")
+            return EXIT_OK
+
+    build = _normalise_build_url(_ask("simPRO build URL (e.g. yourcompany.simprosuite.com)"))
+    company = _ask("Company ID", "0")
+    client_id = _ask("Client ID")
+    client_secret = _ask("Client secret (typing is hidden)", secret=True)
+    read_only = _ask("Start in read-only mode, blocking all changes? (Y/n)", "y").lower() in {"y", "yes"}
+
+    missing = [n for n, v in (("build URL", build), ("client ID", client_id),
+                              ("client secret", client_secret)) if not v]
+    if missing:
+        raise CliError("Missing: " + ", ".join(missing) + ". Nothing was saved. Run `simpro setup` again.",
+                       EXIT_USAGE)
+
+    values = {
+        "SIMPRO_BUILD_URL": build,
+        "SIMPRO_COMPANY_ID": company,
+        "SIMPRO_CLIENT_ID": client_id,
+        "SIMPRO_CLIENT_SECRET": client_secret,
+        "SIMPRO_READ_ONLY": "true" if read_only else "false",
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("# simPRO CLI credentials - keep this file private.\n"
+                    + "".join(f"{k}={v}\n" for k, v in values.items()), encoding="utf-8")
+    _secure(path)
+    os.environ.update(values)
+    SimproClient(Settings()).clear_token()
+    print(f"\nSaved. Testing the connection to {build} ...")
+    try:
+        cmd_test(args)
+    except CliError as e:
+        print(f"\nSettings were saved, but the connection test failed: {e}\n"
+              "Check the values (re-run `simpro setup`) and that the API application is enabled in simPRO.",
+              file=sys.stderr)
+        return e.code
+    print("\nConnected. You can now use /simpro in Claude Code."
+          + (" Read-only mode is ON; set SIMPRO_READ_ONLY=false in the file above to allow changes."
+             if read_only else ""))
+    return EXIT_OK
+
+
 def cmd_config(args: argparse.Namespace) -> int:
     path = env_file_path()
     if args.action == "path":
@@ -690,6 +766,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     t = sub.add_parser("test", parents=[common], help="check credentials and connection")
     t.set_defaults(func=cmd_test)
+
+    st = sub.add_parser("setup", parents=[common], help="first-time setup: enter credentials and test the connection")
+    st.set_defaults(func=cmd_setup)
 
     c = sub.add_parser("config", help="manage the credentials file")
     c.add_argument("action", choices=["init", "path", "show", "logout"])

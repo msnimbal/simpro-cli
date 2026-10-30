@@ -23,76 +23,63 @@ through the simPRO REST API. It needs Python only, with no other dependencies.
 5. Recommended: link the API app to a simPRO user that can view jobs and create invoices but
    **cannot approve** them.
 
-## 2. Install (2 minutes)
+## 2. Install and connect (Mac / Linux, about 3 minutes)
 
-You need Python 3.9 or newer (`python3 --version`) and Git.
+You need Python 3.9 or newer (`python3 --version`) and Git. In a normal **Terminal** window (not inside
+Claude):
 
 ```bash
 git clone https://github.com/msnimbal/simpro-cli.git ~/simpro-cli
 cd ~/simpro-cli
-pipx install .        # recommended; or:  pip install --user .
-simpro --version
+./install.sh
 ```
 
-To update later: `cd ~/simpro-cli && git pull && pipx install --force .`
+The installer sets up the `simpro` command and the `/simpro` skill for Claude Code, then asks for:
 
-No pipx? Install it with `brew install pipx` on Mac or `python -m pip install --user pipx` on Windows.
-Or skip installing and run `python3 ~/simpro-cli/simpro_cli.py ...` instead of `simpro ...`.
+1. your simPRO build URL (e.g. `yourcompany.simprosuite.com`)
+2. Company ID (press Enter for `0`)
+3. Client ID
+4. Client secret (hidden as you type)
+5. whether to start in read-only mode (the default, recommended while you try it)
 
-## 3. Add your credentials (in a text editor, not in chat)
+It saves them to a private file on your computer and tests the connection. When you see
+`Connected`, open Claude Code and type `/simpro`.
+
+The secret is typed into your own terminal and saved locally. It never goes through Claude, so
+never paste it into a chat.
+
+To change the details later, run `simpro setup` again. To switch off read-only mode, set
+`SIMPRO_READ_ONLY=false` in the settings file (`simpro config path` shows where it is).
+To update the tool: `cd ~/simpro-cli && git pull && ./install.sh`.
+
+### Windows or manual install
 
 ```bash
-simpro config init     # creates the private settings file and prints where it is
+git clone https://github.com/msnimbal/simpro-cli.git
+cd simpro-cli
+pipx install .        # or:  pip install --user .
+simpro setup          # asks for the details above and tests the connection
 ```
 
-Open the file it prints in a text editor:
+No pipx? `python -m pip install --user pipx` (or `brew install pipx` on Mac). To get `/simpro` outside
+this folder, copy `.claude/skills/simpro` into `~/.claude/skills/` (`%USERPROFILE%\.claude\skills\` on Windows).
+You can also skip installing and run `python3 simpro_cli.py ...` instead of `simpro ...`.
 
-- Mac/Linux: `~/.config/simpro-cli/.env` (e.g. `open -e ~/.config/simpro-cli/.env`)
-- Windows: `%APPDATA%\simpro-cli\.env` (e.g. `notepad %APPDATA%\simpro-cli\.env`)
+Prefer editing a file? `simpro config init` creates the settings file and prints where it is; fill in
+the values in a text editor, then run `simpro test`.
 
-Fill in `SIMPRO_BUILD_URL`, `SIMPRO_COMPANY_ID`, `SIMPRO_CLIENT_ID` and `SIMPRO_CLIENT_SECRET`,
-then save. Then run:
+## 3. Use it with Claude Code
 
-```bash
-simpro test
-```
-
-You should see `"ok": true` and your company name.
-
-> Tip: set `SIMPRO_READ_ONLY=true` in the same file while you're trying it out.
-> Change it to `false` when you're ready to let it create draft invoices.
-
-## 4. Use it with Claude Code
-
-Open Claude Code **in this folder** so it picks up `CLAUDE.md`, which teaches it the tool and the
-safety rules:
-
-```bash
-cd ~/simpro-cli
-claude
-```
-
-To make it available from any folder, copy the rules into your global Claude Code memory:
-
-```bash
-mkdir -p ~/.claude && cat CLAUDE.md >> ~/.claude/CLAUDE.md
-```
-
-### The `/simpro` command
-
-This repo ships a Claude Code skill at `.claude/skills/simpro/`, so inside this folder you can type
-`/simpro` followed by what you want:
+Open Claude Code in any folder and type `/simpro` followed by what you want:
 
 ```
 /simpro jobs completed this week that haven't been invoiced
 /simpro draft invoice for job 1234
 ```
 
-To use `/simpro` from any folder, install the skill globally:
-
-```bash
-mkdir -p ~/.claude/skills && cp -R .claude/skills/simpro ~/.claude/skills/
-```
+`./install.sh` installs the skill globally, so it works from any folder. (Inside this repo folder it
+is also picked up automatically from `.claude/skills/simpro/`, and `CLAUDE.md` teaches Claude the
+same rules.)
 
 Read-only `simpro` commands run without prompting. Anything that changes data still shows a dry run
 first and needs your explicit yes.
@@ -109,6 +96,7 @@ For any change, Claude shows you a preview first and only sends it after you say
 
 | Task | Command |
 |---|---|
+| First-time setup (asks for your API details) | `simpro setup` |
 | Check connection | `simpro test` |
 | Common endpoints | `simpro endpoints` |
 | One job | `simpro get jobs/1234` |

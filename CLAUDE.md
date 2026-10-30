@@ -8,7 +8,9 @@ to reach simPRO from this machine, so don't write ad-hoc scripts that call the A
 
 1. **Never read, print or ask for the credentials.** They are in the file shown by
    `simpro config path`. Do not open that file, `cat` it or echo the environment. If auth fails,
-   tell the user to check the file themselves.
+   tell the user to check the file themselves. If settings are missing or invalid, tell the user to run
+   `simpro setup` in their own terminal (it asks for the secret; never run it for them and never ask
+   them to paste the secret into chat).
 2. **Reads are free.** `simpro get ...` can be run without asking.
 3. **Writes need the user's explicit OK.** For any `post`, `put`, `patch` or `delete`:
    - first run it **without** `--execute` (dry run) and show the user the method, URL and body

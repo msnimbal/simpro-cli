@@ -19,7 +19,9 @@ Don't write ad-hoc scripts that call the API directly. If `simpro` is not on PAT
 
 1. **Never read, print or ask for the credentials.** They live in the file shown by
    `simpro config path`. Don't open that file, `cat` it or echo the environment. If auth fails,
-   tell the user to check the file themselves.
+   tell the user to check the file themselves. If settings are missing or invalid, tell the user to run
+   `simpro setup` themselves in a normal terminal window (it asks for the secret, so never run it for
+   them and never ask them to paste the secret into chat).
 2. **Reads are free.** `simpro get ...` can be run without asking.
 3. **Writes need the user's explicit OK.** For any `post`, `put`, `patch` or `delete`:
    - first run it **without** `--execute` (dry run) and show the method, URL and body in plain language
