@@ -117,6 +117,24 @@ class CliTest(unittest.TestCase):
         code, out, _ = self.run_cli("get", "jobs/3")
         self.assertEqual((code, out["ID"]), (0, 3))
 
+    def test_body_file_from_windows_powershell_encodings(self):
+        for name, enc in (("utf16.json", "utf-16"), ("bom.json", "utf-8-sig")):
+            f = Path(self.tmp.name) / name
+            f.write_text('{"Name": "Caf\u00e9"}', encoding=enc)
+            code, out, _ = self.run_cli("post", "customers/companies", "-d", f"@{f}")
+            self.assertEqual(code, 0, name)
+            self.assertEqual(out["body"]["Name"], "Caf\u00e9")
+
+    def test_env_file_with_bom_is_read(self):
+        env_file = Path(self.tmp.name) / "win.env"
+        env_file.write_text(f"SIMPRO_BUILD_URL=http://127.0.0.1:{self.port}\n"
+                            "SIMPRO_CLIENT_ID=abc\nSIMPRO_CLIENT_SECRET=secret\n", encoding="utf-8-sig")
+        bare = {k: v for k, v in self.env.items() if not k.startswith("SIMPRO_")}
+        p = subprocess.run(CLI + ["test"], capture_output=True, text=True,
+                           env={**bare, "SIMPRO_ENV_FILE": str(env_file),
+                                "SIMPRO_CONFIG_DIR": self.tmp.name})
+        self.assertEqual(p.returncode, 0, p.stderr)
+
     def test_setup_refuses_without_a_terminal(self):
         code, _, err = self.run_cli("setup")
         self.assertEqual(code, 2)

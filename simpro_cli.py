@@ -78,12 +78,20 @@ def _secure(path: Path) -> None:
         pass  # Windows / unusual filesystems
 
 
+def read_text_file(path: Path) -> str:
+    """Read a text file, tolerating the BOMs that Windows editors/PowerShell add."""
+    raw = path.read_bytes()
+    if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return raw.decode("utf-16")
+    return raw.decode("utf-8-sig")
+
+
 def load_env_file() -> None:
     """Load KEY=VALUE lines from the .env file. Real env vars take precedence."""
     path = env_file_path()
     if not path.is_file():
         return
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    for raw in read_text_file(path).splitlines():
         line = raw.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
@@ -412,7 +420,7 @@ def read_body(spec: str | None) -> Any:
     if spec == "-":
         text = sys.stdin.read()
     elif spec.startswith("@"):
-        text = Path(spec[1:]).expanduser().read_text(encoding="utf-8")
+        text = read_text_file(Path(spec[1:]).expanduser())
     else:
         text = spec
     try:
@@ -786,6 +794,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows consoles default to a legacy code page; keep JSON output intact.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
     load_env_file()
     parser = build_parser()
     args = parser.parse_args(argv)

@@ -23,16 +23,29 @@ through the simPRO REST API. It needs Python only, with no other dependencies.
 5. Recommended: link the API app to a simPRO user that can view jobs and create invoices but
    **cannot approve** them.
 
-## 2. Install and connect (Mac / Linux, about 3 minutes)
+## 2. Install and connect (about 3 minutes)
 
-You need Python 3.9 or newer (`python3 --version`) and Git. In a normal **Terminal** window (not inside
-Claude):
+You need Python 3.9 or newer and Git. Run these in a normal **terminal window** (Terminal on Mac,
+PowerShell on Windows), not inside Claude.
+
+**Mac / Linux**
 
 ```bash
 git clone https://github.com/msnimbal/simpro-cli.git ~/simpro-cli
 cd ~/simpro-cli
 ./install.sh
 ```
+
+**Windows (PowerShell)**
+
+```powershell
+git clone https://github.com/msnimbal/simpro-cli.git $HOME\simpro-cli
+cd $HOME\simpro-cli
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+Python missing on Windows? Install it from [python.org](https://www.python.org/downloads/) and tick
+**Add python.exe to PATH**, then run the installer again.
 
 The installer sets up the `simpro` command and the `/simpro` skill for Claude Code, then asks for:
 
@@ -43,16 +56,17 @@ The installer sets up the `simpro` command and the `/simpro` skill for Claude Co
 5. whether to start in read-only mode (the default, recommended while you try it)
 
 It saves them to a private file on your computer and tests the connection. When you see
-`Connected`, open Claude Code and type `/simpro`.
+`Connected`, open a **new** terminal window (so it can find the `simpro` command), start Claude Code
+and type `/simpro`.
 
 The secret is typed into your own terminal and saved locally. It never goes through Claude, so
 never paste it into a chat.
 
 To change the details later, run `simpro setup` again. To switch off read-only mode, set
 `SIMPRO_READ_ONLY=false` in the settings file (`simpro config path` shows where it is).
-To update the tool: `cd ~/simpro-cli && git pull && ./install.sh`.
+To update the tool: `cd` into the folder, `git pull`, and run the installer again.
 
-### Windows or manual install
+### Manual install
 
 ```bash
 git clone https://github.com/msnimbal/simpro-cli.git
