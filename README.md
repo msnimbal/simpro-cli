@@ -78,7 +78,26 @@ To make it available from any folder, copy the rules into your global Claude Cod
 mkdir -p ~/.claude && cat CLAUDE.md >> ~/.claude/CLAUDE.md
 ```
 
-Then just ask, for example:
+### The `/simpro` command
+
+This repo ships a Claude Code skill at `.claude/skills/simpro/`, so inside this folder you can type
+`/simpro` followed by what you want:
+
+```
+/simpro jobs completed this week that haven't been invoiced
+/simpro draft invoice for job 1234
+```
+
+To use `/simpro` from any folder, install the skill globally:
+
+```bash
+mkdir -p ~/.claude/skills && cp -R .claude/skills/simpro ~/.claude/skills/
+```
+
+Read-only `simpro` commands run without prompting. Anything that changes data still shows a dry run
+first and needs your explicit yes.
+
+Or skip the command and just ask in plain English, for example:
 
 - *"Show me jobs completed this week that haven't been invoiced."*
 - *"Get everything on job 1234 and draft an invoice from the notes."*
